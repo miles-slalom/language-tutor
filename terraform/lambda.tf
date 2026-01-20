@@ -71,17 +71,6 @@ resource "aws_iam_role_policy" "dynamodb_access" {
   })
 }
 
-# Placeholder zip file for Lambda (will be replaced during deployment)
-data "archive_file" "lambda_placeholder" {
-  type        = "zip"
-  output_path = "${path.module}/lambda_placeholder.zip"
-
-  source {
-    content  = "# Placeholder - replaced during deployment"
-    filename = "placeholder.py"
-  }
-}
-
 # Lambda Function
 resource "aws_lambda_function" "api" {
   function_name = "${local.project_name}-api"
@@ -91,8 +80,8 @@ resource "aws_lambda_function" "api" {
   timeout       = 30
   memory_size   = 512
 
-  filename         = data.archive_file.lambda_placeholder.output_path
-  source_code_hash = data.archive_file.lambda_placeholder.output_base64sha256
+  filename         = "${path.module}/../backend/lambda_package.zip"
+  source_code_hash = filebase64sha256("${path.module}/../backend/lambda_package.zip")
 
   environment {
     variables = {
