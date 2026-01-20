@@ -1,15 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-
-interface Message {
-  role: 'user' | 'assistant'
-  content: string
-}
-
-interface TutorTips {
-  corrections: string[]
-  vocabulary: string[]
-  cultural: string[]
-}
+import { Message, TutorTips } from '../types'
 
 interface ChatAreaProps {
   scenario: string

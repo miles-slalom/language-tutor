@@ -4,11 +4,7 @@ import {
   signOut as amplifySignOut,
   fetchAuthSession,
 } from 'aws-amplify/auth'
-
-interface AuthUser {
-  userId: string
-  email?: string
-}
+import { AuthUser } from '../types'
 
 interface UseAuthReturn {
   user: AuthUser | null

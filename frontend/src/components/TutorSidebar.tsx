@@ -1,10 +1,5 @@
 import { useState } from 'react'
-
-interface TutorTips {
-  corrections: string[]
-  vocabulary: string[]
-  cultural: string[]
-}
+import { TutorTips } from '../types'
 
 interface TutorSidebarProps {
   tips: TutorTips

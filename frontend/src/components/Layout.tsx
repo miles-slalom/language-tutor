@@ -1,12 +1,7 @@
 import { useState } from 'react'
 import ChatArea from './ChatArea'
 import TutorSidebar from './TutorSidebar'
-
-interface TutorTips {
-  corrections: string[]
-  vocabulary: string[]
-  cultural: string[]
-}
+import { TutorTips } from '../types'
 
 interface LayoutProps {
   accessToken: string | null
