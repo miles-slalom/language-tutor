@@ -71,6 +71,13 @@ resource "aws_apigatewayv2_route" "scenario_modify" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
+# Route: GET /api/locales (public, no auth - returns list of supported languages)
+resource "aws_apigatewayv2_route" "locales" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /api/locales"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # Default stage with auto-deploy
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.main.id
