@@ -1,11 +1,20 @@
 import { useState } from 'react'
-import { TutorTips } from '../types'
+import { TutorTips, ScenarioProposal, ArcProgress } from '../types'
 
 interface TutorSidebarProps {
   tips: TutorTips
+  scenario?: ScenarioProposal
+  arcProgress?: ArcProgress
 }
 
-export default function TutorSidebar({ tips }: TutorSidebarProps) {
+const ARC_DESCRIPTIONS: Record<ArcProgress, string> = {
+  beginning: 'Getting started - introduce yourself!',
+  rising: 'The situation is developing...',
+  climax: 'Key moment - handle it well!',
+  resolution: 'Wrapping up the conversation',
+}
+
+export default function TutorSidebar({ tips, scenario, arcProgress }: TutorSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const hasAnyTips = tips.corrections.length > 0 || tips.vocabulary.length > 0 || tips.cultural.length > 0
@@ -50,9 +59,55 @@ export default function TutorSidebar({ tips }: TutorSidebarProps) {
 
       {/* Tips Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {!hasAnyTips && (
+        {!hasAnyTips && !scenario && (
           <div className="text-center text-gray-500 mt-8">
             <p className="text-sm">Start chatting to receive feedback on your French!</p>
+          </div>
+        )}
+
+        {/* Arc Progress - Indigo styling */}
+        {arcProgress && (
+          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="text-indigo-500">📈</span>
+              <h3 className="text-sm font-semibold text-indigo-700">Story Progress</h3>
+            </div>
+            <div className="space-y-2">
+              {/* Progress dots */}
+              <div className="flex justify-between">
+                {(['beginning', 'rising', 'climax', 'resolution'] as const).map((stage, idx) => (
+                  <div key={stage} className="flex flex-col items-center">
+                    <div className={`w-4 h-4 rounded-full ${
+                      idx <= ['beginning', 'rising', 'climax', 'resolution'].indexOf(arcProgress)
+                        ? 'bg-indigo-500'
+                        : 'bg-gray-300'
+                    }`} />
+                    <span className="text-xs text-gray-500 mt-1 capitalize">{stage}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Stage description */}
+              <p className="text-sm text-indigo-700 text-center">
+                {ARC_DESCRIPTIONS[arcProgress]}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Scenario Hints - Purple styling */}
+        {scenario && scenario.hints.length > 0 && (
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="text-purple-500">💡</span>
+              <h3 className="text-sm font-semibold text-purple-700">Scenario Hints</h3>
+            </div>
+            <ul className="space-y-1">
+              {scenario.hints.map((hint, index) => (
+                <li key={index} className="text-sm text-purple-800 pl-4 border-l-2 border-purple-300">
+                  {hint}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 
@@ -110,7 +165,13 @@ export default function TutorSidebar({ tips }: TutorSidebarProps) {
 
       {/* Footer with legend */}
       <div className="p-3 border-t bg-gray-50 rounded-b-lg">
-        <div className="flex justify-center space-x-4 text-xs text-gray-500">
+        <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-500">
+          {arcProgress && (
+            <span className="flex items-center"><span className="w-2 h-2 bg-indigo-400 rounded-full mr-1"></span>Progress</span>
+          )}
+          {scenario && scenario.hints.length > 0 && (
+            <span className="flex items-center"><span className="w-2 h-2 bg-purple-400 rounded-full mr-1"></span>Hints</span>
+          )}
           <span className="flex items-center"><span className="w-2 h-2 bg-red-400 rounded-full mr-1"></span>Corrections</span>
           <span className="flex items-center"><span className="w-2 h-2 bg-blue-400 rounded-full mr-1"></span>Vocab</span>
           <span className="flex items-center"><span className="w-2 h-2 bg-green-400 rounded-full mr-1"></span>Culture</span>
