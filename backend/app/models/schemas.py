@@ -9,7 +9,7 @@ class Message(BaseModel):
 
 
 class TutorTips(BaseModel):
-    """Tutor feedback on user's French."""
+    """Tutor feedback on user's target language."""
     corrections: List[str] = Field(default_factory=list, description="Grammar/spelling corrections")
     vocabulary: List[str] = Field(default_factory=list, description="Helpful vocabulary suggestions")
     cultural: List[str] = Field(default_factory=list, description="Cultural tips and notes")
@@ -22,15 +22,19 @@ class ScenarioProposal(BaseModel):
     objective: str = Field(..., description="User's goal, e.g., 'Extend your stay by one night'")
     conflict: str = Field(..., description="The challenge, e.g., 'There's a lavender festival and rooms are scarce'")
     difficulty: str = Field(..., description="CEFR level: A1, A2, B1, B2, C1, C2")
-    opening_line: str = Field(..., description="Character's first line in French")
+    opening_line: str = Field(..., description="Character's first line in target language")
     character_name: str = Field(..., description="Character name, e.g., 'Marie, the receptionist'")
     character_personality: str = Field(..., description="Personality traits, e.g., 'Friendly but stressed'")
     hints: List[str] = Field(default_factory=list, description="Vocabulary/phrases useful for this scenario")
+    locale: str = Field(default="fr-FR", description="The locale code this scenario is for")
+    language_name: str = Field(default="French", description="Language name, e.g., 'French'")
+    country_name: str = Field(default="France", description="Country name, e.g., 'France'")
 
 
 class ScenarioRequest(BaseModel):
     """Request body for scenario generation."""
-    difficulty: str = Field(default="B1", description="CEFR level")
+    locale: str = Field(default="fr-FR", description="Locale code, e.g., 'fr-FR', 'es-MX', 'de-DE'")
+    difficulty: str = Field(default="A1", description="CEFR level")
     preferences: Optional[str] = Field(default=None, description="User theme preferences")
     veto_reason: Optional[str] = Field(default=None, description="Reason for rejecting previous scenario")
 
