@@ -14,33 +14,71 @@ bedrock_runtime = boto3.client("bedrock-runtime", region_name="us-east-1")
 MODEL_ID = "anthropic.claude-3-sonnet-20240229-v1:0"
 
 
-def build_system_prompt(scenario: str) -> str:
-    """Build the system prompt for Claude with dual roles."""
-    return f"""You are playing a character in a French language learning scenario. You have two roles:
+def build_system_prompt(scenario: dict, exchange_count: int) -> str:
+    """Build the system prompt for Claude with dual roles and arc guidance."""
 
-1. CHARACTER ROLE: {scenario}
-   - Respond in French as the character
-   - Stay in character throughout the conversation
-   - Keep responses 1-3 sentences, natural and conversational
-   - Be responsive to what the user says
+    if exchange_count <= 2:
+        arc_stage = "beginning"
+        arc_guidance = "Establish the situation, hint at the conflict"
+    elif exchange_count <= 5:
+        arc_stage = "rising"
+        arc_guidance = "The conflict becomes apparent, tension rises"
+    elif exchange_count <= 8:
+        arc_stage = "climax"
+        arc_guidance = "Work toward resolution"
+    else:
+        arc_stage = "resolution"
+        arc_guidance = "Reach a natural ending"
 
-2. TUTOR ROLE: Analyze the user's French and provide helpful feedback.
-   - Identify grammar or spelling errors
-   - Suggest useful vocabulary for their next response
-   - Provide cultural tips when relevant to the scenario
+    return f"""You are playing {scenario['character_name']} in a French language learning scenario.
+
+SCENARIO CONTEXT:
+- Setting: {scenario['setting_description']}
+- Your personality: {scenario['character_personality']}
+- The learner's objective: {scenario['objective']}
+- The conflict/twist: {scenario['conflict']}
+- Difficulty level: {scenario['difficulty']}
+
+STORY ARC GUIDANCE:
+- Current exchange: {exchange_count}
+- Current stage: {arc_stage} - {arc_guidance}
+- Exchanges 1-2: Establish the situation, hint at the conflict
+- Exchanges 3-5: The conflict becomes apparent, tension rises
+- Exchanges 6-8: Work toward resolution
+- Exchanges 8-10: Reach a natural ending
+
+YOUR CHARACTER ROLE:
+1. Stay in character as {scenario['character_name']}
+2. Respond in French appropriate for {scenario['difficulty']} level
+3. Keep responses 1-3 sentences, natural and conversational
+4. Naturally progress the story toward resolution
+5. If the learner handles the situation well, let them succeed
+6. If they struggle, offer graceful ways to adapt or fail
+
+TUTOR ROLE:
+Analyze the learner's French and provide:
+- Corrections for any grammar or spelling errors
+- Vocabulary suggestions for their next response
+- Cultural tips when relevant
 
 IMPORTANT: Always respond with valid JSON in this exact format:
 {{
-  "character_response": "Your in-character French response here",
-  "tutor_tips": {{
-    "corrections": ["List any grammar/spelling corrections, or empty array if none"],
-    "vocabulary": ["Helpful vocabulary words/phrases for their next response"],
-    "cultural": ["Cultural tips if relevant, or empty array if none"]
-  }},
-  "conversation_complete": false
+    "character_response": "Your in-character French response (1-3 sentences)",
+    "tutor_tips": {{
+        "corrections": ["Grammar/spelling corrections if any, or empty array"],
+        "vocabulary": ["Helpful words/phrases for their next response"],
+        "cultural": ["Cultural tips if relevant, or empty array"]
+    }},
+    "conversation_complete": false,
+    "resolution_status": null,
+    "arc_progress": "{arc_stage}"
 }}
 
-Set "conversation_complete" to true only when the scenario reaches a natural end (e.g., transaction complete, goodbye exchanged).
+Set "conversation_complete" to true only when the scenario reaches a natural end.
+When complete, set "resolution_status" to one of:
+- "success" - learner achieved their objective
+- "adapted" - learner found an alternative solution
+- "graceful_fail" - learner didn't succeed but handled it gracefully
 
 Respond ONLY with the JSON object, no other text."""
 
@@ -87,14 +125,17 @@ def parse_response(response_text: str) -> dict:
                 "vocabulary": [],
                 "cultural": []
             },
-            "conversation_complete": False
+            "conversation_complete": False,
+            "resolution_status": None,
+            "arc_progress": "beginning"
         }
 
 
 async def get_chat_response(
     user_message: str,
     conversation_history: List[Message],
-    scenario: str
+    scenario: dict,
+    exchange_count: int = 0
 ) -> dict:
     """
     Get a chat response from Claude via Bedrock.
@@ -102,12 +143,13 @@ async def get_chat_response(
     Args:
         user_message: The user's message in French
         conversation_history: Previous messages in the conversation
-        scenario: The scenario description
+        scenario: The scenario dict with setting, objective, conflict, etc.
+        exchange_count: Current exchange number for story arc tracking
 
     Returns:
-        dict with character_response, tutor_tips, and conversation_complete
+        dict with character_response, tutor_tips, conversation_complete, arc_progress, resolution_status
     """
-    system_prompt = build_system_prompt(scenario)
+    system_prompt = build_system_prompt(scenario, exchange_count)
     messages = build_messages(user_message, conversation_history)
 
     request_body = {
