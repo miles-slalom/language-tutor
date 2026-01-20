@@ -110,3 +110,20 @@ resource "aws_s3_bucket_policy" "frontend" {
 
   depends_on = [aws_s3_bucket_public_access_block.frontend]
 }
+
+# Deploy frontend files to S3 and invalidate CloudFront
+resource "null_resource" "frontend_deployment" {
+  triggers = {
+    frontend_hash = filemd5("${path.module}/../frontend/dist/index.html")
+    assets_hash   = sha256(join(",", [for f in fileset("${path.module}/../frontend/dist/assets", "*") : filemd5("${path.module}/../frontend/dist/assets/${f}")]))
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      aws s3 sync ${path.module}/../frontend/dist s3://${aws_s3_bucket.frontend.id} --delete --region us-east-1
+      aws cloudfront create-invalidation --distribution-id ${aws_cloudfront_distribution.frontend.id} --paths "/*" --region us-east-1
+    EOT
+  }
+
+  depends_on = [aws_cloudfront_distribution.frontend, aws_s3_bucket_policy.frontend]
+}

@@ -53,6 +53,24 @@ resource "aws_apigatewayv2_route" "health" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+# Route: POST /api/scenario/generate (requires authentication)
+resource "aws_apigatewayv2_route" "scenario_generate" {
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "POST /api/scenario/generate"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+}
+
+# Route: POST /api/scenario/modify (requires authentication)
+resource "aws_apigatewayv2_route" "scenario_modify" {
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "POST /api/scenario/modify"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+}
+
 # Default stage with auto-deploy
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.main.id
