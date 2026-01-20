@@ -39,8 +39,9 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 }
 
-resource "aws_iam_policy" "bedrock_access" {
+resource "aws_iam_role_policy" "bedrock_access" {
   name = "${var.project_name}-${var.environment}-bedrock-access"
+  role = aws_iam_role.ecs_task_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -54,8 +55,9 @@ resource "aws_iam_policy" "bedrock_access" {
   })
 }
 
-resource "aws_iam_policy" "cloudwatch_logs" {
+resource "aws_iam_role_policy" "cloudwatch_logs" {
   name = "${var.project_name}-${var.environment}-cloudwatch-logs"
+  role = aws_iam_role.ecs_task_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -71,14 +73,4 @@ resource "aws_iam_policy" "cloudwatch_logs" {
       }
     ]
   })
-}
-
-resource "aws_iam_role_policy_attachment" "ecs_task_bedrock" {
-  role       = aws_iam_role.ecs_task_role.name
-  policy_arn = aws_iam_policy.bedrock_access.arn
-}
-
-resource "aws_iam_role_policy_attachment" "ecs_task_cloudwatch" {
-  role       = aws_iam_role.ecs_task_role.name
-  policy_arn = aws_iam_policy.cloudwatch_logs.arn
 }

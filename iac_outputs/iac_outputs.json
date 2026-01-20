@@ -1,0 +1,37 @@
+{
+  "alb_dns_name": {
+    "sensitive": false,
+    "type": "string",
+    "value": "french-tutor-dev-alb-1581602983.us-east-1.elb.amazonaws.com"
+  },
+  "cloudfront_distribution_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "E1B4UCCRTPFZPY"
+  },
+  "cloudfront_distribution_url": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://d38wq7vstljtz5.cloudfront.net"
+  },
+  "ecr_repository_url": {
+    "sensitive": false,
+    "type": "string",
+    "value": "838317896310.dkr.ecr.us-east-1.amazonaws.com/french-tutor-dev-backend"
+  },
+  "ecs_cluster_name": {
+    "sensitive": false,
+    "type": "string",
+    "value": "french-tutor-dev-cluster"
+  },
+  "ecs_service_name": {
+    "sensitive": false,
+    "type": "string",
+    "value": "french-tutor-dev-backend-service"
+  },
+  "s3_bucket_name": {
+    "sensitive": false,
+    "type": "string",
+    "value": "french-tutor-dev-frontend-awmi9zgb"
+  }
+}
