@@ -117,9 +117,18 @@ export default function ChatArea({
     <div className="flex flex-col h-full bg-white rounded-lg shadow-md">
       <div className="p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold">{scenario.setting}</h2>
-          <span className="px-2 py-1 bg-white/20 rounded text-sm">{scenario.difficulty}</span>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="font-medium">{scenario.language_name}</span>
+            {scenario.country_name && (
+              <>
+                <span className="text-blue-200">•</span>
+                <span className="text-blue-100">{scenario.country_name}</span>
+              </>
+            )}
+          </div>
+          <span className="px-2 py-1 bg-white/20 rounded text-sm font-medium">{scenario.difficulty}</span>
         </div>
+        <h2 className="text-lg font-semibold mb-1">{scenario.setting}</h2>
         <p className="text-sm text-blue-100 mb-2">{scenario.setting_description}</p>
         <div className="flex items-center text-sm text-blue-200">
           <span>👤 {scenario.character_name}</span>
@@ -208,7 +217,7 @@ export default function ChatArea({
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder={conversationComplete ? 'Conversation complete!' : 'Type your response in French...'}
+            placeholder={conversationComplete ? 'Conversation complete!' : 'Type your response...'}
             disabled={isLoading || conversationComplete}
             className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
