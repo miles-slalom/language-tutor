@@ -37,3 +37,8 @@ output "s3_bucket_name" {
   description = "S3 bucket name for frontend"
   value       = aws_s3_bucket.frontend.id
 }
+
+output "dynamodb_table_name" {
+  description = "DynamoDB table name for user profiles"
+  value       = aws_dynamodb_table.users.name
+}
