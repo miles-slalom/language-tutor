@@ -1,3 +1,22 @@
+// Locale types
+export interface LocaleVariant {
+  code: string;
+  country: string;
+  flag: string;
+  is_default: boolean;
+}
+
+export interface Language {
+  code: string;
+  name: string;
+  native_name: string;
+  variants: LocaleVariant[];
+}
+
+export interface LocalesResponse {
+  languages: Language[];
+}
+
 export interface Message {
   role: 'user' | 'assistant'
   content: string
@@ -19,9 +38,13 @@ export interface ScenarioProposal {
   character_name: string
   character_personality: string
   hints: string[]
+  locale: string
+  language_name: string
+  country_name: string
 }
 
 export interface ScenarioRequest {
+  locale: string
   difficulty: string
   preferences?: string
   veto_reason?: string
