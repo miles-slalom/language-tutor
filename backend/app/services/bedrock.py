@@ -6,6 +6,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 from app.models.schemas import Message
+from app.models.locales import get_locale_info
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,9 @@ MODEL_ID = "anthropic.claude-3-sonnet-20240229-v1:0"
 
 def build_system_prompt(scenario: dict, exchange_count: int) -> str:
     """Build the system prompt for Claude with dual roles and arc guidance."""
+    language_name = scenario.get('language_name', 'French')
+    country_name = scenario.get('country_name', 'France')
+    locale = scenario.get('locale', 'fr-FR')
 
     if exchange_count <= 2:
         arc_stage = "beginning"
@@ -30,7 +34,12 @@ def build_system_prompt(scenario: dict, exchange_count: int) -> str:
         arc_stage = "resolution"
         arc_guidance = "Reach a natural ending"
 
-    return f"""You are playing {scenario['character_name']} in a French language learning scenario.
+    return f"""You are playing {scenario['character_name']} in a {language_name} language learning scenario.
+
+LOCALE CONTEXT:
+- Language: {language_name}
+- Country/Region: {country_name}
+- Use vocabulary and expressions specific to {country_name}
 
 SCENARIO CONTEXT:
 - Setting: {scenario['setting_description']}
@@ -49,21 +58,22 @@ STORY ARC GUIDANCE:
 
 YOUR CHARACTER ROLE:
 1. Stay in character as {scenario['character_name']}
-2. Respond in French appropriate for {scenario['difficulty']} level
-3. Keep responses 1-3 sentences, natural and conversational
-4. Naturally progress the story toward resolution
-5. If the learner handles the situation well, let them succeed
-6. If they struggle, offer graceful ways to adapt or fail
+2. Respond in {language_name} appropriate for {scenario['difficulty']} level
+3. Use vocabulary and expressions specific to {country_name}
+4. Keep responses 1-3 sentences, natural and conversational
+5. Naturally progress the story toward resolution
+6. If the learner handles the situation well, let them succeed
+7. If they struggle, offer graceful ways to adapt or fail
 
 TUTOR ROLE:
-Analyze the learner's French and provide:
+Analyze the learner's {language_name} and provide:
 - Corrections for any grammar or spelling errors
 - Vocabulary suggestions for their next response
-- Cultural tips when relevant
+- Cultural tips when relevant (specific to {country_name})
 
 IMPORTANT: Always respond with valid JSON in this exact format:
 {{
-    "character_response": "Your in-character French response (1-3 sentences)",
+    "character_response": "Your in-character {language_name} response (1-3 sentences)",
     "tutor_tips": {{
         "corrections": ["Grammar/spelling corrections if any, or empty array"],
         "vocabulary": ["Helpful words/phrases for their next response"],
@@ -182,23 +192,33 @@ async def get_chat_response(
 
 def build_scenario_generation_prompt(
     difficulty: str,
+    locale: str,
+    language_name: str,
+    country_name: str,
     preferences: Optional[str] = None,
     veto_reason: Optional[str] = None
 ) -> str:
     """Build system prompt for scenario generation."""
-    prompt = f"""You are a creative French language learning scenario designer. Generate an immersive, story-driven scenario for a student at {difficulty} level.
+    prompt = f"""You are a creative {language_name} language learning scenario designer. Generate an immersive, story-driven scenario for a student at {difficulty} level.
+
+LOCALE: {locale}
+- Language: {language_name}
+- Country/Region: {country_name}
+- Use vocabulary, expressions, and cultural references specific to {country_name}
+- Set the scenario IN {country_name}
 
 Each scenario MUST have:
-1. A vivid SETTING (bakery, train station, hotel, village market, museum, etc.)
+1. A vivid SETTING (bakery, train station, hotel, village market, museum, etc.) located in {country_name}
 2. A clear OBJECTIVE the learner must achieve
 3. A CONFLICT or TWIST that creates interesting tension
-4. A CHARACTER with personality (name, role, demeanor)
+4. A CHARACTER with personality (name, role, demeanor) - use culturally appropriate names for {country_name}
 5. Potential for RESOLUTION (success, adaptation, or graceful failure)
 
 The scenario should:
 - Be completable in 5-10 exchanges
 - Have vocabulary appropriate for {difficulty} level
-- Include cultural authenticity (French customs, expressions)
+- Include cultural authenticity ({country_name} customs, expressions)
+- Use locale-specific vocabulary (e.g., Argentine Spanish uses voseo, Québécois French uses local expressions like "char" for car)
 - Be engaging with mild drama/humor
 
 """
@@ -215,7 +235,10 @@ Respond ONLY with valid JSON in this exact format:
     "objective": "What the learner needs to accomplish",
     "conflict": "The twist or obstacle they'll face",
     "difficulty": \"""" + difficulty + """\",
-    "opening_line": "The character's first line in French (appropriate to difficulty)",
+    "locale": \"""" + locale + """\",
+    "language_name": \"""" + language_name + """\",
+    "country_name": \"""" + country_name + """\",
+    "opening_line": "The character's first line in """ + language_name + """ (appropriate to difficulty)",
     "character_name": "Name and role",
     "character_personality": "Brief personality description",
     "hints": ["3-5 useful vocabulary words or phrases for this scenario"]
@@ -226,7 +249,8 @@ Respond ONLY with valid JSON in this exact format:
 async def generate_scenario(
     difficulty: str,
     preferences: Optional[str] = None,
-    veto_reason: Optional[str] = None
+    veto_reason: Optional[str] = None,
+    locale: str = "fr-FR"
 ) -> dict:
     """
     Generate a creative scenario proposal using Claude via Bedrock.
@@ -235,18 +259,31 @@ async def generate_scenario(
         difficulty: CEFR level (A1, A2, B1, B2, C1, C2)
         preferences: Optional user theme preferences
         veto_reason: Optional reason why previous scenario was rejected
+        locale: Locale code (e.g., "fr-FR", "es-MX")
 
     Returns:
         dict matching ScenarioProposal structure
     """
-    system_prompt = build_scenario_generation_prompt(difficulty, preferences, veto_reason)
+    locale_info = get_locale_info(locale)
+    if locale_info:
+        language, variant = locale_info
+        language_name = language.name
+        country_name = variant.country
+    else:
+        language_name = "French"
+        country_name = "France"
+        locale = "fr-FR"
+
+    system_prompt = build_scenario_generation_prompt(
+        difficulty, locale, language_name, country_name, preferences, veto_reason
+    )
 
     request_body = {
         "anthropic_version": "bedrock-2023-05-31",
         "max_tokens": 1024,
         "system": system_prompt,
         "messages": [
-            {"role": "user", "content": "Generate a new French language learning scenario."}
+            {"role": "user", "content": f"Generate a new {language_name} language learning scenario."}
         ]
     }
 
@@ -267,6 +304,9 @@ async def generate_scenario(
             logger.error(f"Invalid scenario response: {response_text}")
             raise ValueError("Generated scenario missing required fields")
 
+        parsed["locale"] = locale
+        parsed["language_name"] = language_name
+        parsed["country_name"] = country_name
         return parsed
 
     except ClientError as e:
@@ -279,9 +319,15 @@ async def generate_scenario(
 
 def build_modify_scenario_prompt(original_scenario: dict, modification_request: str) -> str:
     """Build system prompt for scenario modification."""
+    locale = original_scenario.get("locale", "fr-FR")
+    language_name = original_scenario.get("language_name", "French")
+    country_name = original_scenario.get("country_name", "France")
     hints_str = ", ".join(original_scenario.get("hints", []))
 
-    return f"""You are modifying a French language learning scenario based on user feedback.
+    return f"""You are modifying a {language_name} language learning scenario based on user feedback.
+
+LOCALE: {locale} ({language_name} - {country_name})
+Use vocabulary and expressions specific to {country_name}.
 
 ORIGINAL SCENARIO:
 Setting: {original_scenario.get("setting", "")}
@@ -295,7 +341,7 @@ Hints: {hints_str}
 
 USER'S MODIFICATION REQUEST: {modification_request}
 
-Adjust the scenario while keeping the same difficulty level and overall structure unless specifically asked to change them.
+Adjust the scenario while keeping the same difficulty level, locale, and overall structure unless specifically asked to change them.
 
 Respond ONLY with valid JSON in the same format as the original scenario:
 {{
@@ -304,7 +350,10 @@ Respond ONLY with valid JSON in the same format as the original scenario:
     "objective": "What the learner needs to accomplish",
     "conflict": "The twist or obstacle they'll face",
     "difficulty": "{original_scenario.get("difficulty", "B1")}",
-    "opening_line": "The character's first line in French",
+    "locale": "{locale}",
+    "language_name": "{language_name}",
+    "country_name": "{country_name}",
+    "opening_line": "The character's first line in {language_name}",
     "character_name": "Name and role",
     "character_personality": "Brief personality description",
     "hints": ["3-5 useful vocabulary words or phrases for this scenario"]
@@ -325,6 +374,10 @@ async def modify_scenario(
     Returns:
         dict matching ScenarioProposal structure (modified)
     """
+    locale = original_scenario.get("locale", "fr-FR")
+    language_name = original_scenario.get("language_name", "French")
+    country_name = original_scenario.get("country_name", "France")
+
     system_prompt = build_modify_scenario_prompt(original_scenario, modification_request)
 
     request_body = {
@@ -353,6 +406,9 @@ async def modify_scenario(
             logger.error(f"Invalid modified scenario response: {response_text}")
             raise ValueError("Modified scenario missing required fields")
 
+        parsed["locale"] = locale
+        parsed["language_name"] = language_name
+        parsed["country_name"] = country_name
         return parsed
 
     except ClientError as e:

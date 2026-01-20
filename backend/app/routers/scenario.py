@@ -28,13 +28,14 @@ async def generate_scenario_endpoint(
     the specified CEFR level.
     """
     user_id = get_user_id_from_request(request)
-    logger.info(f"Scenario generation request from user: {user_id}, difficulty: {scenario_request.difficulty}")
+    logger.info(f"Scenario generation request from user: {user_id}, difficulty: {scenario_request.difficulty}, locale: {scenario_request.locale}")
 
     try:
         scenario_data = await generate_scenario(
             difficulty=scenario_request.difficulty,
             preferences=scenario_request.preferences,
-            veto_reason=scenario_request.veto_reason
+            veto_reason=scenario_request.veto_reason,
+            locale=scenario_request.locale
         )
 
         scenario = ScenarioProposal(
@@ -46,7 +47,10 @@ async def generate_scenario_endpoint(
             opening_line=scenario_data.get("opening_line", ""),
             character_name=scenario_data.get("character_name", ""),
             character_personality=scenario_data.get("character_personality", ""),
-            hints=scenario_data.get("hints", [])
+            hints=scenario_data.get("hints", []),
+            locale=scenario_data.get("locale", scenario_request.locale),
+            language_name=scenario_data.get("language_name", "French"),
+            country_name=scenario_data.get("country_name", "France")
         )
 
         return ScenarioResponse(scenario=scenario)
@@ -90,7 +94,10 @@ async def modify_scenario_endpoint(
             opening_line=modified_data.get("opening_line", ""),
             character_name=modified_data.get("character_name", ""),
             character_personality=modified_data.get("character_personality", ""),
-            hints=modified_data.get("hints", [])
+            hints=modified_data.get("hints", []),
+            locale=modified_data.get("locale", modify_request.original_scenario.locale),
+            language_name=modified_data.get("language_name", modify_request.original_scenario.language_name),
+            country_name=modified_data.get("country_name", modify_request.original_scenario.country_name)
         )
 
         return ScenarioResponse(scenario=scenario)
