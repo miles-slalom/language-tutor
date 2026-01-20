@@ -23,10 +23,13 @@ async def chat(request: Request, chat_request: ChatRequest) -> ChatResponse:
     logger.info(f"Chat request from user: {user_id}")
 
     try:
+        scenario_dict = chat_request.scenario.model_dump()
+
         response_data = await get_chat_response(
             user_message=chat_request.message,
             conversation_history=chat_request.conversation_history,
-            scenario=chat_request.scenario
+            scenario=scenario_dict,
+            exchange_count=chat_request.exchange_count
         )
 
         tutor_tips = TutorTips(
@@ -38,7 +41,9 @@ async def chat(request: Request, chat_request: ChatRequest) -> ChatResponse:
         return ChatResponse(
             character_response=response_data.get("character_response", ""),
             tutor_tips=tutor_tips,
-            conversation_complete=response_data.get("conversation_complete", False)
+            conversation_complete=response_data.get("conversation_complete", False),
+            resolution_status=response_data.get("resolution_status"),
+            arc_progress=response_data.get("arc_progress", "beginning")
         )
 
     except Exception as e:

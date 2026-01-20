@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
-from app.routers import chat
+from app.routers import chat, scenario
 
 app = FastAPI(
     title="French Tutor API",
@@ -21,6 +21,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(chat.router, prefix="/api", tags=["chat"])
+app.include_router(scenario.router, prefix="/api", tags=["scenario"])
 
 
 @app.get("/api/health", tags=["health"])
