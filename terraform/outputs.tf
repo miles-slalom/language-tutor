@@ -17,3 +17,8 @@ output "lambda_function_arn" {
   description = "Lambda function ARN"
   value       = aws_lambda_function.api.arn
 }
+
+output "api_gateway_url" {
+  description = "API Gateway URL for backend"
+  value       = aws_apigatewayv2_api.main.api_endpoint
+}
