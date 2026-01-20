@@ -20,15 +20,17 @@ export default function Layout({ accessToken, onSignOut, userEmail }: LayoutProp
   const [error, setError] = useState<string | null>(null);
 
   const [currentScenario, setCurrentScenario] = useState<ScenarioProposal | null>(null);
+  const [currentLocale, setCurrentLocale] = useState('fr-FR');
   const [currentDifficulty, setCurrentDifficulty] = useState('B1');
 
   const [tutorTips, setTutorTips] = useState<TutorTips>({ corrections: [], vocabulary: [], cultural: [] });
   const [arcProgress, setArcProgress] = useState<ArcProgress>('beginning');
   const [resolutionStatus, setResolutionStatus] = useState<ResolutionStatus | null>(null);
 
-  const generateScenario = useCallback(async (difficulty: string, preferences?: string, vetoReason?: string) => {
+  const generateScenario = useCallback(async (locale: string, difficulty: string, preferences?: string, vetoReason?: string) => {
     setIsLoading(true);
     setError(null);
+    setCurrentLocale(locale);
     setCurrentDifficulty(difficulty);
 
     try {
@@ -39,6 +41,7 @@ export default function Layout({ accessToken, onSignOut, userEmail }: LayoutProp
           ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
         },
         body: JSON.stringify({
+          locale,
           difficulty,
           preferences: preferences || undefined,
           veto_reason: vetoReason || undefined,
@@ -97,8 +100,8 @@ export default function Layout({ accessToken, onSignOut, userEmail }: LayoutProp
   }, []);
 
   const requestNewScenario = useCallback((vetoReason?: string) => {
-    generateScenario(currentDifficulty, undefined, vetoReason);
-  }, [currentDifficulty, generateScenario]);
+    generateScenario(currentLocale, currentDifficulty, undefined, vetoReason);
+  }, [currentLocale, currentDifficulty, generateScenario]);
 
   const handleConversationComplete = useCallback((status: ResolutionStatus) => {
     setResolutionStatus(status);
@@ -185,8 +188,8 @@ export default function Layout({ accessToken, onSignOut, userEmail }: LayoutProp
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <span className="text-2xl">🇫🇷</span>
-            <h1 className="text-xl font-bold text-gray-800">French Tutor</h1>
+            <span className="text-2xl">🌍</span>
+            <h1 className="text-xl font-bold text-gray-800">Language Tutor</h1>
           </div>
           <div className="flex items-center space-x-4">
             {userEmail && (
