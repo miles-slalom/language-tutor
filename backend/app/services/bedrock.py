@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import List, Optional
 
 import boto3
@@ -116,29 +117,77 @@ def build_messages(
 
 def parse_response(response_text: str) -> dict:
     """Parse Claude's response, handling potential JSON issues."""
+    # First, try direct JSON parsing
     try:
         return json.loads(response_text)
     except json.JSONDecodeError:
+        pass
+
+    # Try to extract JSON from the response (Claude sometimes adds text around it)
+    try:
         start = response_text.find("{")
         end = response_text.rfind("}") + 1
         if start != -1 and end > start:
-            try:
-                return json.loads(response_text[start:end])
-            except json.JSONDecodeError:
-                pass
+            json_str = response_text[start:end]
+            result = json.loads(json_str)
+            return result
+    except json.JSONDecodeError:
+        pass
 
-        logger.error(f"Failed to parse response: {response_text}")
-        return {
-            "character_response": response_text,
-            "tutor_tips": {
-                "corrections": [],
-                "vocabulary": [],
-                "cultural": []
-            },
-            "conversation_complete": False,
-            "resolution_status": None,
-            "arc_progress": "beginning"
-        }
+    # Try to fix common issue: unquoted array items like ["word" - definition]
+    # Should be ["word - definition"]
+    try:
+        # Fix pattern: "word" - definition (not properly quoted)
+        # This regex finds: "something" - something_else and wraps it properly
+        fixed = response_text
+        # Replace patterns like ["text" - text, "text" - text] with ["text - text", "text - text"]
+        fixed = re.sub(r'"([^"]+)"\s*-\s*([^,\]\}]+)', r'"\1 - \2"', fixed)
+
+        start = fixed.find("{")
+        end = fixed.rfind("}") + 1
+        if start != -1 and end > start:
+            result = json.loads(fixed[start:end])
+            logger.info("Successfully parsed JSON after fixing array formatting")
+            return result
+    except json.JSONDecodeError as e:
+        logger.warning(f"JSON fix attempt failed: {e}")
+
+    # Last resort: try to extract character_response using regex
+    try:
+        match = re.search(r'"character_response"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,', response_text)
+        if match:
+            character_response = match.group(1)
+            # Unescape the string
+            character_response = character_response.replace('\\"', '"').replace('\\n', '\n')
+
+            logger.warning(f"JSON parse failed, extracted character_response via regex")
+            return {
+                "character_response": character_response,
+                "tutor_tips": {
+                    "corrections": [],
+                    "vocabulary": [],
+                    "cultural": []
+                },
+                "conversation_complete": False,
+                "resolution_status": None,
+                "arc_progress": "beginning"
+            }
+    except Exception as e:
+        logger.error(f"Regex extraction failed: {e}")
+
+    # Absolute last resort: return error message in target language, NOT raw JSON
+    logger.error(f"All parsing methods failed for response: {response_text[:500]}...")
+    return {
+        "character_response": "Excusez-moi, il y a eu un problème technique. Pouvez-vous répéter s'il vous plaît?",
+        "tutor_tips": {
+            "corrections": [],
+            "vocabulary": ["(Technical issue - please try again)"],
+            "cultural": []
+        },
+        "conversation_complete": False,
+        "resolution_status": None,
+        "arc_progress": "beginning"
+    }
 
 
 async def get_chat_response(
