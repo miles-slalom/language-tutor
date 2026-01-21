@@ -48,6 +48,11 @@ SCENARIO CONTEXT:
 - The conflict/twist: {scenario['conflict']}
 - Difficulty level: {scenario['difficulty']}
 
+CONVERSATION CONTEXT:
+- You already opened the conversation by saying: "{scenario.get('opening_line', '')}"
+- The learner is now responding to your opening line based on their objective.
+- Do NOT repeat your opening line. Continue the conversation naturally.
+
 STORY ARC GUIDANCE:
 - Current exchange: {exchange_count}
 - Current stage: {arc_stage} - {arc_guidance}
@@ -97,15 +102,29 @@ def build_messages(
     user_message: str,
     conversation_history: List[Message]
 ) -> List[dict]:
-    """Build the messages array for Claude API."""
+    """Build the messages array for Claude API.
+
+    Skips leading assistant messages since Bedrock requires the first
+    message to have 'user' role.
+    """
     messages = []
 
-    for msg in conversation_history:
-        messages.append({
-            "role": msg.role,
-            "content": msg.content
-        })
+    # Find index of first user message in history
+    first_user_idx = None
+    for i, msg in enumerate(conversation_history):
+        if msg.role == "user":
+            first_user_idx = i
+            break
 
+    # Only include messages from first user message onward
+    if first_user_idx is not None:
+        for msg in conversation_history[first_user_idx:]:
+            messages.append({
+                "role": msg.role,
+                "content": msg.content
+            })
+
+    # Always append the new user message
     messages.append({
         "role": "user",
         "content": user_message
@@ -228,6 +247,10 @@ The scenario should:
         prompt += f"The user prefers: {preferences}\n"
 
     prompt += """
+IMPORTANT: The opening_line is what YOUR CHARACTER (the NPC) says FIRST to START the conversation.
+The learner will then respond based on their objective. Do NOT write what the learner should say.
+For example, if the character is a hotel receptionist, the opening_line might be "Bonjour, bienvenue à l'Hôtel du Lac. Vous avez une réservation?"
+
 Respond ONLY with valid JSON in this exact format:
 {
     "setting": "Brief location name",
@@ -238,7 +261,7 @@ Respond ONLY with valid JSON in this exact format:
     "locale": \"""" + locale + """\",
     "language_name": \"""" + language_name + """\",
     "country_name": \"""" + country_name + """\",
-    "opening_line": "The character's first line in """ + language_name + """ (appropriate to difficulty)",
+    "opening_line": "What the NPC character says FIRST to greet or engage the learner in """ + language_name + """ - this is NOT what the learner says. Example: 'Bonjour! Comment puis-je vous aider?' for a shopkeeper",
     "character_name": "Name and role",
     "character_personality": "Brief personality description",
     "hints": ["3-5 useful vocabulary words or phrases for this scenario"]
@@ -353,7 +376,7 @@ Respond ONLY with valid JSON in the same format as the original scenario:
     "locale": "{locale}",
     "language_name": "{language_name}",
     "country_name": "{country_name}",
-    "opening_line": "The character's first line in {language_name}",
+    "opening_line": "What the NPC character says FIRST to greet or engage the learner in {language_name} - NOT what the learner says",
     "character_name": "Name and role",
     "character_personality": "Brief personality description",
     "hints": ["3-5 useful vocabulary words or phrases for this scenario"]

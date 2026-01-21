@@ -19,7 +19,7 @@ resource "aws_s3_bucket_public_access_block" "frontend" {
 # CloudFront Origin Access Control
 resource "aws_cloudfront_origin_access_control" "frontend" {
   name                              = "${local.project_name}-frontend-oac"
-  description                       = "OAC for French Tutor Frontend"
+  description                       = "OAC for Language Tutor Frontend"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
@@ -30,7 +30,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = "index.html"
-  comment             = "French Tutor Frontend Distribution"
+  comment             = "Language Tutor Frontend Distribution"
 
   origin {
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
