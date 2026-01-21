@@ -17,7 +17,7 @@
   "cognito_client_id": {
     "sensitive": false,
     "type": "string",
-    "value": "2qmprk83vg7893thofmo6cldud"
+    "value": "64u09t132qf0vh5rb8sh4lqrs3"
   },
   "cognito_user_pool_id": {
     "sensitive": false,
