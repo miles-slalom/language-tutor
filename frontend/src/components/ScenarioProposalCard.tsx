@@ -92,16 +92,6 @@ export default function ScenarioProposalCard({
             </div>
           </div>
 
-          <div className="p-4">
-            <div className="flex items-start space-x-2">
-              <span className="text-lg">⚡</span>
-              <div>
-                <span className="font-semibold text-gray-800">Challenge</span>
-                <p className="text-gray-600 mt-1">{scenario.conflict}</p>
-              </div>
-            </div>
-          </div>
-
           <div className="p-4 bg-blue-50">
             <div className="flex items-start space-x-2">
               <span className="text-lg">💬</span>
