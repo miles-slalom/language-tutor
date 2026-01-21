@@ -72,13 +72,17 @@ Analyze the learner's {language_name} and provide:
 - Vocabulary suggestions for their next response
 - Cultural tips when relevant (specific to {country_name})
 
-IMPORTANT: Always respond with valid JSON in this exact format:
+IMPORTANT: Always respond with valid JSON in this exact format.
+CRITICAL: All array items must be complete quoted strings.
+CORRECT vocabulary format: ["word - definition", "word - definition"]
+WRONG vocabulary format: ["word" - definition, "word" - definition]
+
 {{
     "character_response": "Your in-character {language_name} response (1-3 sentences)",
     "tutor_tips": {{
-        "corrections": ["Grammar/spelling corrections if any, or empty array"],
-        "vocabulary": ["Helpful words/phrases for their next response"],
-        "cultural": ["Cultural tips if relevant, or empty array"]
+        "corrections": ["Full sentence correction if any"],
+        "vocabulary": ["word - definition", "phrase - meaning"],
+        "cultural": ["Cultural tip if relevant"]
     }},
     "conversation_complete": false,
     "resolution_status": null,
