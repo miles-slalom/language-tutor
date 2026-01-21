@@ -111,7 +111,7 @@ test.describe('Authentication Page', () => {
 
   test('app title and description are visible', async ({ page }) => {
     // Verify app branding
-    await expect(page.getByRole('heading', { name: /french tutor/i })).toBeVisible();
-    await expect(page.getByText(/practice french with ai conversations/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /language tutor/i })).toBeVisible();
+    await expect(page.getByText(/practice languages with ai conversations/i)).toBeVisible();
   });
 });

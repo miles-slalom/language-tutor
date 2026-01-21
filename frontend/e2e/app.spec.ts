@@ -25,9 +25,9 @@ async function loginUser(page: Page): Promise<boolean> {
 }
 
 test.describe('App - Unauthenticated', () => {
-  test('app title contains French Tutor', async ({ page }) => {
+  test('app title contains Language Tutor', async ({ page }) => {
     await page.goto('/');
-    await expect(page).toHaveTitle(/French Tutor|Language Tutor|Tutor/i);
+    await expect(page).toHaveTitle(/Language Tutor/i);
   });
 
   test('unauthenticated shows login screen', async ({ page }) => {

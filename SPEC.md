@@ -2,7 +2,7 @@
 
 ## Product Vision
 
-An AI-powered conversational language tutor that provides immersive, scenario-based practice for language learners. Rather than drilling vocabulary or grammar rules in isolation, users engage in realistic conversations with AI characters in authentic settings—ordering at a bakery in Paris, negotiating at a market in Mexico City, or checking into a hotel in Tokyo.
+An AI-powered conversational language tutor that provides immersive, scenario-based practice for language learners. Rather than drilling vocabulary or grammar rules in isolation, users engage in realistic conversations with AI characters in authentic settings—ordering at a bakery in Paris, negotiating at a market in Mexico City, or checking into a hotel in Berlin.
 
 The application combines:
 - **Immersive roleplay** - AI characters with personality in vivid settings
@@ -10,14 +10,23 @@ The application combines:
 - **Adaptive difficulty** - CEFR-aligned content from A1 to C2
 - **Narrative engagement** - Story arcs with conflict and resolution
 
+## Deployment
+
+| Resource | URL |
+|----------|-----|
+| Application | https://d3blyys2t3r0hm.cloudfront.net |
+| API | https://vgxcb7g6al.execute-api.us-east-1.amazonaws.com |
+
 ## Phase Roadmap
 
 ### Phase 1: Foundation MVP ✅ COMPLETE
 - React frontend with Vite and Tailwind CSS
 - FastAPI backend deployed on AWS Lambda
-- AWS Cognito authentication with Google OAuth
+- AWS Cognito authentication with email/password
+- Password reset flow via email verification
 - Claude 3 Sonnet integration via AWS Bedrock
 - Basic chat interface with AI responses
+- Terraform infrastructure as code
 
 ### Phase 2: Scenario System ✅ COMPLETE
 - Dynamic scenario generation based on difficulty and locale
@@ -26,6 +35,8 @@ The application combines:
 - 15 languages with regional variants (fr-FR, fr-CA, es-ES, es-MX, etc.)
 - Character personalities and setting descriptions
 - Scenario hints for vocabulary preparation
+- Conflict/twist hidden from user (emerges naturally in conversation)
+- NPC opens conversation, user responds based on their objective
 
 ### Phase 3: Intelligent Tutoring ⚠️ PARTIAL
 **Completed:**
@@ -34,10 +45,11 @@ The application combines:
 - Cultural tips relevant to scenario context
 - End-of-conversation summary with resolution status
 - Arc progress tracking
+- Tutor sidebar with collapsible sections
 
 **Not yet implemented:**
 - Detailed CEFR assessment in summary
-- Personalized study tips based on errors
+- Personalized study tips based on errors made during conversation
 - Book/resource recommendations
 
 ### Phase 4: Adaptive Difficulty ⚠️ PARTIAL
@@ -47,8 +59,8 @@ The application combines:
 - Vocabulary complexity matching level
 
 **Not yet implemented:**
-- Mid-conversation difficulty adaptation
-- Cross-session level tracking
+- Mid-conversation difficulty adaptation (simplify if user struggles)
+- Cross-session level tracking (DynamoDB)
 - Automatic level inference from user performance
 
 ## Architecture
@@ -74,46 +86,56 @@ The application combines:
 │     Cognito User Pool    │    │  - /api/health               │
 │                          │    │  - /api/locales              │
 │  - Email/password auth   │    │  - /api/scenario/generate    │
-│  - Google OAuth          │    │  - /api/scenario/modify      │
+│  - Password reset flow   │    │  - /api/scenario/modify      │
 │  - JWT tokens            │    │  - /api/chat                 │
 └──────────────────────────┘    └──────────────────────────────┘
                                                 │
-                                                ▼
-                                ┌──────────────────────────────┐
-                                │      AWS Bedrock             │
-                                │   (Claude 3 Sonnet)          │
-                                │                              │
-                                │  - Scenario generation       │
-                                │  - Character responses       │
-                                │  - Tutor feedback            │
+                ┌───────────────────────────────┤
+                ▼                               ▼
+┌──────────────────────────┐    ┌──────────────────────────────┐
+│      DynamoDB            │    │      AWS Bedrock             │
+│   (User Profiles)        │    │   (Claude 3 Sonnet)          │
+│                          │    │                              │
+│  - Table defined         │    │  - Scenario generation       │
+│  - Not yet integrated    │    │  - Character responses       │
+└──────────────────────────┘    │  - Tutor feedback            │
                                 └──────────────────────────────┘
 ```
 
-### Frontend (React + Vite + Tailwind)
-- **Auth.tsx** - Cognito authentication with sign up, sign in, verification, and password reset
-- **Layout.tsx** - Main application shell
-- **LocaleSelector.tsx** - Language and regional variant selection
-- **DifficultySelector.tsx** - CEFR level picker (A1-C2)
-- **ScenarioProposalCard.tsx** - Accept/modify/veto interface
-- **ChatArea.tsx** - Conversation interface with message bubbles
-- **TutorSidebar.tsx** - Real-time corrections, vocabulary, cultural tips
-- **ScenarioSummary.tsx** - End-of-conversation review
+### Frontend Components
 
-### Backend (FastAPI + Mangum)
-- **main.py** - FastAPI app with CORS, routers, Lambda handler
-- **routers/chat.py** - POST /api/chat endpoint
-- **routers/scenario.py** - POST /api/scenario/generate, /api/scenario/modify
-- **routers/locales.py** - GET /api/locales
-- **services/bedrock.py** - Claude API integration, prompt engineering
-- **services/auth.py** - JWT token validation
-- **models/schemas.py** - Pydantic models for requests/responses
-- **models/locales.py** - Supported languages and variants
+| Component | Description |
+|-----------|-------------|
+| `Auth.tsx` | Cognito authentication with sign up, sign in, verification, and password reset |
+| `Layout.tsx` | Main application shell, manages app state flow |
+| `LocaleSelector.tsx` | Language and regional variant selection |
+| `DifficultySelector.tsx` | CEFR level picker (A1-C2) with theme suggestions |
+| `ScenarioProposalCard.tsx` | Accept/modify/veto interface (conflict hidden) |
+| `ChatArea.tsx` | Conversation interface with message bubbles and arc progress |
+| `TutorSidebar.tsx` | Real-time corrections, vocabulary, cultural tips |
+| `ScenarioSummary.tsx` | End-of-conversation review with resolution status |
 
-### AI (Claude 3 Sonnet via Bedrock)
-- Dual-role prompting: Claude plays character AND tutor in single response
-- JSON-structured responses for reliable parsing
-- Story arc guidance in system prompt
-- Locale-aware vocabulary and expressions
+### Backend Modules
+
+| Module | Description |
+|--------|-------------|
+| `main.py` | FastAPI app with CORS, routers, Lambda handler |
+| `routers/chat.py` | POST /api/chat endpoint |
+| `routers/scenario.py` | POST /api/scenario/generate, /api/scenario/modify |
+| `routers/locales.py` | GET /api/locales |
+| `services/bedrock.py` | Claude API integration, prompt engineering |
+| `services/auth.py` | JWT token validation from Cognito |
+| `models/schemas.py` | Pydantic models for requests/responses |
+| `models/locales.py` | Supported languages and variants |
+
+### Integration Tests
+
+| Test Suite | Description |
+|------------|-------------|
+| `tests/test_api_integration.py` | Health, locales, unauthorized access tests |
+| `tests/test_auth_integration.py` | Authenticated scenario generation, modification, and chat flow tests |
+| `frontend/e2e/auth.spec.ts` | Playwright tests for authentication UI |
+| `frontend/e2e/app.spec.ts` | Playwright tests for main app flow |
 
 ## Key Design Decisions
 
@@ -140,12 +162,19 @@ Language (French)
 
 ### Story Arc Structure
 4-stage narrative over 5-10 exchanges:
-1. **Beginning (1-2)** - Establish setting, introduce character, hint at conflict
+1. **Beginning (1-2)** - NPC opens conversation, establishes setting
 2. **Rising (3-5)** - Conflict becomes apparent, tension increases
 3. **Climax (6-8)** - Work toward resolution
 4. **Resolution (8-10)** - Natural ending with success, adaptation, or graceful failure
 
 This creates engagement through narrative tension while keeping conversations focused and completable.
+
+### Conversation Flow Design
+1. **Scenario presented** - User sees setting, objective, character, and vocabulary hints
+2. **Conflict hidden** - The twist/conflict is NOT shown to the user; it emerges naturally
+3. **NPC opens** - The AI character speaks first with a greeting/question appropriate to the setting
+4. **User responds** - User creates their own opening based on their objective
+5. **Conversation continues** - Natural back-and-forth toward resolution
 
 ### Dual-Role Prompting
 Single API call produces both:
@@ -173,12 +202,12 @@ This provides agency while maintaining AI-driven creativity.
   setting: string              // "A bustling bakery"
   setting_description: string  // "The morning sun streams through..."
   objective: string            // "Order a specific pastry for a friend's birthday"
-  conflict: string             // "The bakery is out of your first choice"
+  conflict: string             // Hidden from user - "The bakery is out of your first choice"
   difficulty: string           // "B1"
   locale: string               // "fr-FR"
   language_name: string        // "French"
   country_name: string         // "France"
-  opening_line: string         // "Bonjour! Qu'est-ce que je peux..."
+  opening_line: string         // NPC's first line: "Bonjour! Qu'est-ce que je peux..."
   character_name: string       // "Marie, the baker"
   character_personality: string // "Warm but busy, speaks quickly"
   hints: string[]              // ["croissant", "tarte aux pommes", ...]
@@ -212,30 +241,42 @@ This provides agency while maintaining AI-driven creativity.
 
 ## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/health` | GET | Health check, returns service status |
-| `/api/locales` | GET | Returns all supported languages and variants |
-| `/api/scenario/generate` | POST | Generate new scenario based on difficulty/locale |
-| `/api/scenario/modify` | POST | Modify existing scenario per user request |
-| `/api/chat` | POST | Send message, get character response + tutor tips |
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/health` | GET | No | Health check, returns service status |
+| `/api/locales` | GET | No | Returns all supported languages and variants |
+| `/api/scenario/generate` | POST | Yes | Generate new scenario based on difficulty/locale |
+| `/api/scenario/modify` | POST | Yes | Modify existing scenario per user request |
+| `/api/chat` | POST | Yes | Send message, get character response + tutor tips |
 
-## Supported Locales
+## Supported Languages (15 languages, 30 variants)
 
-| Language | Variants |
-|----------|----------|
-| French | France (fr-FR), Canada (fr-CA), Belgium (fr-BE), Switzerland (fr-CH) |
-| Spanish | Spain (es-ES), Mexico (es-MX), Argentina (es-AR), Colombia (es-CO) |
-| German | Germany (de-DE), Austria (de-AT), Switzerland (de-CH) |
-| Italian | Italy (it-IT), Switzerland (it-CH) |
-| Portuguese | Portugal (pt-PT), Brazil (pt-BR) |
-| Japanese | Japan (ja-JP) |
-| Korean | Korea (ko-KR) |
-| Chinese | Simplified (zh-CN), Traditional (zh-TW) |
-| Arabic | Standard (ar-SA), Egyptian (ar-EG) |
-| Russian | Russia (ru-RU) |
-| Dutch | Netherlands (nl-NL), Belgium (nl-BE) |
-| Swedish | Sweden (sv-SE) |
-| Norwegian | Norway (nb-NO) |
-| Danish | Denmark (da-DK) |
-| Polish | Poland (pl-PL) |
+| Language | Native Name | Variants |
+|----------|-------------|----------|
+| French | Français | 🇫🇷 France, 🇧🇪 Belgium, 🇨🇭 Switzerland, 🇨🇦 Canada |
+| Spanish | Español | 🇲🇽 Mexico, 🇪🇸 Spain, 🇦🇷 Argentina, 🇨🇴 Colombia, 🇵🇪 Peru, 🇨🇱 Chile |
+| Portuguese | Português | 🇧🇷 Brazil, 🇵🇹 Portugal |
+| German | Deutsch | 🇩🇪 Germany, 🇦🇹 Austria, 🇨🇭 Switzerland |
+| Italian | Italiano | 🇮🇹 Italy, 🇨🇭 Switzerland |
+| Dutch | Nederlands | 🇳🇱 Netherlands, 🇧🇪 Belgium |
+| Polish | Polski | 🇵🇱 Poland |
+| Swedish | Svenska | 🇸🇪 Sweden |
+| Danish | Dansk | 🇩🇰 Denmark |
+| Norwegian | Norsk | 🇳🇴 Norway |
+| Finnish | Suomi | 🇫🇮 Finland |
+| Greek | Ελληνικά | 🇬🇷 Greece |
+| Czech | Čeština | 🇨🇿 Czech Republic |
+| Romanian | Română | 🇷🇴 Romania |
+| Hungarian | Magyar | 🇭🇺 Hungary |
+
+## Recent Changes
+
+### 2026-01-21
+- Fixed "Auth UserPool not configured" error by correcting Cognito client ID in frontend build
+- Fixed "Failed to send message" Bedrock error by filtering leading assistant messages in conversation history
+- Fixed opening line bug - NPC now correctly opens conversation, user responds based on objective
+- Added password reset flow (forgot password → email code → new password)
+- Renamed "French Tutor" to "Language Tutor" throughout the application
+- Conflict/twist now hidden from scenario proposal (emerges naturally)
+- Created comprehensive integration test suites (backend pytest, frontend Playwright)
+- Added detailed documentation (README.md, SPEC.md, frontend/README.md, backend/README.md)
