@@ -1,9 +1,11 @@
 # GitHub Actions CI Workflow
 #
 # Required secrets to configure in GitHub repository settings:
+# - AWS_ACCESS_KEY_ID: AWS access key for Cognito authentication
+# - AWS_SECRET_ACCESS_KEY: AWS secret key for Cognito authentication
 # - TEST_USER_EMAIL: Email of test user for Cognito authentication
 # - TEST_USER_PASSWORD: Password of test user for Cognito authentication
-# - TEST_COGNITO_CLIENT_ID: Cognito User Pool Client ID for authentication
+# - TEST_COGNITO_CLIENT_ID: Cognito User Pool Client ID (64u09t132qf0vh5rb8sh4lqrs3)
 #
 # Note: Tests requiring authentication will be skipped if secrets are not configured.
 
@@ -37,10 +39,13 @@ jobs:
 
       - name: Run pytest
         env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
           TEST_COGNITO_CLIENT_ID: ${{ secrets.TEST_COGNITO_CLIENT_ID }}
-        run: pytest -v
+        run: pytest tests/ -v
 
   frontend-tests:
     runs-on: ubuntu-latest
