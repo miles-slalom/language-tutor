@@ -144,8 +144,8 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">French Tutor</h1>
-          <p className="text-gray-600 mt-2">Practice French with AI conversations</p>
+          <h1 className="text-3xl font-bold text-gray-800">Language Tutor</h1>
+          <p className="text-gray-600 mt-2">Practice languages with AI conversations</p>
         </div>
 
         {error && (
