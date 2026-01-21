@@ -111,19 +111,39 @@ resource "aws_s3_bucket_policy" "frontend" {
   depends_on = [aws_s3_bucket_public_access_block.frontend]
 }
 
-# Deploy frontend files to S3 and invalidate CloudFront
-resource "null_resource" "frontend_deployment" {
-  triggers = {
-    frontend_hash = filemd5("${path.module}/../frontend/dist/index.html")
-    assets_hash   = sha256(join(",", [for f in fileset("${path.module}/../frontend/dist/assets", "*") : filemd5("${path.module}/../frontend/dist/assets/${f}")]))
-  }
+# Upload index.html to S3
+resource "aws_s3_object" "frontend_index" {
+  bucket       = aws_s3_bucket.frontend.id
+  key          = "index.html"
+  source       = "${path.module}/../frontend/dist/index.html"
+  content_type = "text/html"
+  etag         = filemd5("${path.module}/../frontend/dist/index.html")
 
-  provisioner "local-exec" {
-    command = <<-EOT
-      aws s3 sync ${path.module}/../frontend/dist s3://${aws_s3_bucket.frontend.id} --delete --region us-east-1
-      aws cloudfront create-invalidation --distribution-id ${aws_cloudfront_distribution.frontend.id} --paths "/*" --region us-east-1
-    EOT
-  }
+  depends_on = [aws_s3_bucket_policy.frontend]
+}
 
-  depends_on = [aws_cloudfront_distribution.frontend, aws_s3_bucket_policy.frontend]
+# Upload CSS assets to S3
+resource "aws_s3_object" "frontend_css" {
+  for_each = fileset("${path.module}/../frontend/dist/assets", "*.css")
+
+  bucket       = aws_s3_bucket.frontend.id
+  key          = "assets/${each.value}"
+  source       = "${path.module}/../frontend/dist/assets/${each.value}"
+  content_type = "text/css"
+  etag         = filemd5("${path.module}/../frontend/dist/assets/${each.value}")
+
+  depends_on = [aws_s3_bucket_policy.frontend]
+}
+
+# Upload JS assets to S3
+resource "aws_s3_object" "frontend_js" {
+  for_each = fileset("${path.module}/../frontend/dist/assets", "*.js")
+
+  bucket       = aws_s3_bucket.frontend.id
+  key          = "assets/${each.value}"
+  source       = "${path.module}/../frontend/dist/assets/${each.value}"
+  content_type = "application/javascript"
+  etag         = filemd5("${path.module}/../frontend/dist/assets/${each.value}")
+
+  depends_on = [aws_s3_bucket_policy.frontend]
 }
