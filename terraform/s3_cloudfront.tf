@@ -147,3 +147,22 @@ resource "aws_s3_object" "frontend_js" {
 
   depends_on = [aws_s3_bucket_policy.frontend]
 }
+
+# CloudFront Cache Invalidation
+resource "terraform_data" "cloudfront_invalidation" {
+  triggers_replace = {
+    index_etag = aws_s3_object.frontend_index.etag
+    css_etags  = join(",", [for obj in aws_s3_object.frontend_css : obj.etag])
+    js_etags   = join(",", [for obj in aws_s3_object.frontend_js : obj.etag])
+  }
+
+  provisioner "local-exec" {
+    command = "aws cloudfront create-invalidation --distribution-id ${aws_cloudfront_distribution.frontend.id} --paths '/*' --region us-east-1"
+  }
+
+  depends_on = [
+    aws_s3_object.frontend_index,
+    aws_s3_object.frontend_css,
+    aws_s3_object.frontend_js
+  ]
+}
