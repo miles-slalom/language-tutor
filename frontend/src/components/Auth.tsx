@@ -3,9 +3,11 @@ import {
   signUp,
   signIn,
   confirmSignUp,
+  resetPassword,
+  confirmResetPassword,
 } from 'aws-amplify/auth'
 
-type AuthState = 'signIn' | 'signUp' | 'confirmSignUp'
+type AuthState = 'signIn' | 'signUp' | 'confirmSignUp' | 'forgotPassword' | 'resetPassword'
 
 interface AuthProps {
   onAuthSuccess: () => void
@@ -19,6 +21,9 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
   const [verificationCode, setVerificationCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmNewPassword, setConfirmNewPassword] = useState('')
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -85,6 +90,52 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
     }
   }
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      await resetPassword({ username: resetEmail })
+      setAuthState('resetPassword')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to send reset code'
+      setError(message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleConfirmResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    if (newPassword !== confirmNewPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      await confirmResetPassword({
+        username: resetEmail,
+        confirmationCode: verificationCode,
+        newPassword: newPassword,
+      })
+      setResetEmail('')
+      setNewPassword('')
+      setConfirmNewPassword('')
+      setVerificationCode('')
+      setAuthState('signIn')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to reset password'
+      setError(message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
   const buttonClass = "w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition font-medium"
   const linkClass = "text-blue-600 hover:text-blue-800 cursor-pointer"
@@ -131,6 +182,11 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
             <button type="submit" className={buttonClass} disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
+            <p className="text-center text-gray-600 text-sm">
+              <span onClick={() => { setAuthState('forgotPassword'); setResetEmail(email); setError(''); }} className={linkClass}>
+                Forgot Password?
+              </span>
+            </p>
             <p className="text-center text-gray-600 text-sm">
               Don't have an account?{' '}
               <span onClick={() => { setAuthState('signUp'); setError(''); }} className={linkClass}>
@@ -208,6 +264,85 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
             </div>
             <button type="submit" className={buttonClass} disabled={loading}>
               {loading ? 'Verifying...' : 'Verify Email'}
+            </button>
+            <p className="text-center text-gray-600 text-sm">
+              <span onClick={() => { setAuthState('signIn'); setError(''); }} className={linkClass}>
+                Back to Sign In
+              </span>
+            </p>
+          </form>
+        )}
+
+        {authState === 'forgotPassword' && (
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <h2 className="text-xl font-semibold text-gray-700 mb-4">Reset Password</h2>
+            <p className="text-gray-600 text-sm mb-4">
+              Enter your email address and we'll send you a code to reset your password.
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                className={inputClass}
+                placeholder="your@email.com"
+                required
+              />
+            </div>
+            <button type="submit" className={buttonClass} disabled={loading}>
+              {loading ? 'Sending code...' : 'Send Reset Code'}
+            </button>
+            <p className="text-center text-gray-600 text-sm">
+              <span onClick={() => { setAuthState('signIn'); setError(''); }} className={linkClass}>
+                Back to Sign In
+              </span>
+            </p>
+          </form>
+        )}
+
+        {authState === 'resetPassword' && (
+          <form onSubmit={handleConfirmResetPassword} className="space-y-4">
+            <h2 className="text-xl font-semibold text-gray-700 mb-4">Create New Password</h2>
+            <p className="text-gray-600 text-sm mb-4">
+              We sent a verification code to <strong>{resetEmail}</strong>
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Verification Code</label>
+              <input
+                type="text"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value)}
+                className={inputClass}
+                placeholder="Enter 6-digit code"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className={inputClass}
+                placeholder="Min 8 chars, number & special char"
+                required
+                minLength={8}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+              <input
+                type="password"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                className={inputClass}
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <button type="submit" className={buttonClass} disabled={loading}>
+              {loading ? 'Resetting password...' : 'Reset Password'}
             </button>
             <p className="text-center text-gray-600 text-sm">
               <span onClick={() => { setAuthState('signIn'); setError(''); }} className={linkClass}>
