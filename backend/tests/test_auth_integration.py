@@ -230,3 +230,60 @@ class TestChatAuthenticated:
         assert isinstance(tutor_tips["corrections"], list)
         assert isinstance(tutor_tips["vocabulary"], list)
         assert isinstance(tutor_tips["cultural"], list)
+
+
+class TestOpeningLine:
+    """Tests to verify opening_line is an NPC greeting, not a learner statement."""
+
+    @pytest.mark.asyncio
+    async def test_opening_line_is_npc_greeting(self, authenticated_client, api_url, auth_token):
+        """Verify opening_line contains NPC greeting patterns."""
+        if auth_token is None:
+            pytest.skip("Auth credentials not provided")
+
+        response = await authenticated_client.post(
+            f"{api_url}/api/scenario/generate",
+            json={"locale": "fr-FR", "difficulty": "A1"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        opening_line = data["scenario"]["opening_line"]
+
+        has_question_mark = "?" in opening_line
+        greeting_words = ["Bonjour", "Bienvenue", "Comment", "Salut", "Bonsoir"]
+        has_greeting = any(word in opening_line for word in greeting_words)
+        welcoming_patterns = ["puis-je", "voulez-vous", "cherchez", "avez-vous"]
+        has_welcoming = any(pattern.lower() in opening_line.lower() for pattern in welcoming_patterns)
+
+        is_npc_greeting = has_question_mark or has_greeting or has_welcoming
+        assert is_npc_greeting, (
+            f"Opening line doesn't look like an NPC greeting: '{opening_line}'. "
+            "Expected question marks, greeting words, or welcoming phrases."
+        )
+
+        learner_phrases = ["Excusez-moi", "Je voudrais", "S'il vous plaît, je"]
+        for phrase in learner_phrases:
+            assert phrase not in opening_line, (
+                f"Opening line contains learner phrase '{phrase}': '{opening_line}'"
+            )
+
+    @pytest.mark.asyncio
+    async def test_opening_line_not_learner_statement(self, authenticated_client, api_url, auth_token):
+        """Verify opening_line doesn't start with first-person learner statements."""
+        if auth_token is None:
+            pytest.skip("Auth credentials not provided")
+
+        response = await authenticated_client.post(
+            f"{api_url}/api/scenario/generate",
+            json={"locale": "fr-FR", "difficulty": "A1"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        opening_line = data["scenario"]["opening_line"]
+
+        first_person_starts = ["Je ", "J'", "Moi, ", "Moi je"]
+        for pattern in first_person_starts:
+            assert not opening_line.startswith(pattern), (
+                f"Opening line starts with first-person pattern '{pattern}': '{opening_line}'. "
+                "The opening line should be from the NPC, not the learner."
+            )
