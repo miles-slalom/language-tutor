@@ -17,6 +17,11 @@ provider "aws" {
 }
 
 locals {
+  # NOTE: project_name is kept as "french-tutor" for AWS resource naming continuity.
+  # This identifier is used for S3 buckets, Lambda functions, DynamoDB tables, Cognito,
+  # and API Gateway resources. Changing it would create new resources and orphan existing
+  # deployed infrastructure. User-facing branding has been updated to "Language Tutor"
+  # in application code and Terraform descriptions - this value is NOT user-facing.
   project_name = "french-tutor"
   common_tags = {
     Project     = local.project_name

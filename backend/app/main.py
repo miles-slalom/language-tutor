@@ -5,8 +5,8 @@ from mangum import Mangum
 from app.routers import chat, scenario, locales
 
 app = FastAPI(
-    title="French Tutor API",
-    description="Backend API for French Language Tutor application",
+    title="Language Tutor API",
+    description="Backend API for Language Tutor application",
     version="1.0.0"
 )
 
@@ -28,7 +28,7 @@ app.include_router(locales.router)
 @app.get("/api/health", tags=["health"])
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "service": "french-tutor-api"}
+    return {"status": "healthy", "service": "language-tutor-api"}
 
 
 # Lambda handler via Mangum

@@ -15,7 +15,7 @@ resource "aws_cognito_user_pool" "main" {
 
   verification_message_template {
     default_email_option = "CONFIRM_WITH_CODE"
-    email_subject        = "French Tutor - Verify your email"
+    email_subject        = "Language Tutor - Verify your email"
     email_message        = "Your verification code is {####}"
   }
 
