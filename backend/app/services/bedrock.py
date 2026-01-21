@@ -376,7 +376,7 @@ Respond ONLY with valid JSON in the same format as the original scenario:
     "locale": "{locale}",
     "language_name": "{language_name}",
     "country_name": "{country_name}",
-    "opening_line": "The character's first line in {language_name}",
+    "opening_line": "What the NPC character says FIRST to greet or engage the learner in {language_name} - NOT what the learner says",
     "character_name": "Name and role",
     "character_personality": "Brief personality description",
     "hints": ["3-5 useful vocabulary words or phrases for this scenario"]
