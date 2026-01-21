@@ -48,6 +48,11 @@ SCENARIO CONTEXT:
 - The conflict/twist: {scenario['conflict']}
 - Difficulty level: {scenario['difficulty']}
 
+CONVERSATION CONTEXT:
+- You already opened the conversation by saying: "{scenario.get('opening_line', '')}"
+- The learner is now responding to your opening line based on their objective.
+- Do NOT repeat your opening line. Continue the conversation naturally.
+
 STORY ARC GUIDANCE:
 - Current exchange: {exchange_count}
 - Current stage: {arc_stage} - {arc_guidance}
