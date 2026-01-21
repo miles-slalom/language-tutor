@@ -97,15 +97,29 @@ def build_messages(
     user_message: str,
     conversation_history: List[Message]
 ) -> List[dict]:
-    """Build the messages array for Claude API."""
+    """Build the messages array for Claude API.
+
+    Skips leading assistant messages since Bedrock requires the first
+    message to have 'user' role.
+    """
     messages = []
 
-    for msg in conversation_history:
-        messages.append({
-            "role": msg.role,
-            "content": msg.content
-        })
+    # Find index of first user message in history
+    first_user_idx = None
+    for i, msg in enumerate(conversation_history):
+        if msg.role == "user":
+            first_user_idx = i
+            break
 
+    # Only include messages from first user message onward
+    if first_user_idx is not None:
+        for msg in conversation_history[first_user_idx:]:
+            messages.append({
+                "role": msg.role,
+                "content": msg.content
+            })
+
+    # Always append the new user message
     messages.append({
         "role": "user",
         "content": user_message
